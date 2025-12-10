@@ -8,10 +8,10 @@ import themesData from '../data/themes.json';
 
 const ThemePage = () => {
   const { themeId } = useParams();
-  console.log('ThemePage rendering with themeId:', themeId);
+  //console.log('ThemePage rendering with themeId:', themeId);
   const theme = themesData.themes[themeId];
-  console.log('Theme data:', theme);
-  
+  //console.log('Theme data:', theme);
+
   const { currentText, getNextText, isLoading } = useTextBuffer(theme);
   const { backgroundImages, activeIndex, changeBackground } = useBackgroundManager(theme);
 

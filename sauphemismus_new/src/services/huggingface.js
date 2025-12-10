@@ -1,6 +1,6 @@
 import { InferenceClient } from "@huggingface/inference";
 
-const client = new InferenceClient(import.meta.env.HUGGINGFACE_ACCESS_TOKEN);
+const client = new InferenceClient('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');
 
 export const generateText = async (model, prompt, maxTokens = 100) => {
   console.log('Generating text with model:', model);
@@ -39,7 +39,7 @@ export const analyzePartOfSpeech = async (text) => {
       .replace(/\d+/g, '') // Remove numbers
       .trim();
     
-    console.log('Analyzing text:', cleanText);
+    //console.log('Analyzing text:', cleanText);
     
     const output = await client.tokenClassification({
       model: "vblagoje/bert-english-uncased-finetuned-pos",
@@ -47,7 +47,7 @@ export const analyzePartOfSpeech = async (text) => {
       provider: "hf-inference",
     });
     
-    console.log('Raw POS output:', output);
+    //console.log('Raw POS output:', output);
     
     // Group keywords by part-of-speech tags like in the old system
     const posGroups = {};
@@ -58,16 +58,16 @@ export const analyzePartOfSpeech = async (text) => {
     }
     
     output.forEach(token => {
-      console.log('Processing token:', token);
+      //console.log('Processing token:', token);
       
       // Use entity_group like in the old system
       const entity = token.entity_group || token.entity || token.label;
       
       if (['NOUN', 'PROPN', 'VERB', 'ADJ', 'ADV', 'ADP'].includes(entity)) {
         const cleanWord = token.word.replace(/##/g, ''); // Remove BERT subword markers
-        
-        console.log(`Found ${entity}: "${cleanWord}"`);
-        
+
+        //console.log(`Found ${entity}: "${cleanWord}"`);
+
         // Filter out very short words and common German stop words
         if (cleanWord.length > 2 && 
             !/^(der|die|das|ein|eine|und|oder|aber|mit|von|zu|in|auf|für|ist|sind|war|waren|haben|hat|hatte|sein|seine|ich|du|er|sie|es|wir|ihr|sie)$/i.test(cleanWord)) {
@@ -79,32 +79,32 @@ export const analyzePartOfSpeech = async (text) => {
           // Avoid duplicates
           if (!posGroups[entity].includes(cleanWord)) {
             posGroups[entity].push(cleanWord);
-            console.log(`Added to ${entity}: "${cleanWord}"`);
+            //console.log(`Added to ${entity}: "${cleanWord}"`);
           }
         } else {
-          console.log(`Filtered out: "${cleanWord}" (too short or stopword)`);
+          //console.log(`Filtered out: "${cleanWord}" (too short or stopword)`);
         }
       } else {
-        console.log(`Ignored entity type: ${entity} for word: ${token.word}`);
+        //console.log(`Ignored entity type: ${entity} for word: ${token.word}`);
       }
     });
-    
-    console.log('Final POS groups:', posGroups);
+
+    //console.log('Final POS groups:', posGroups);
     return posGroups;
   } catch (error) {
     console.error('Error analyzing part of speech:', error);
     
     // Fallback: simple keyword extraction
     try {
-      console.log('Using fallback keyword extraction for:', text);
+      //console.log('Using fallback keyword extraction for:', text);
       const words = text
         .replace(/[^\w\säöüß]/gi, ' ')
         .split(/\s+/)
         .filter(word => word.length > 3)
         .filter(word => !/^(der|die|das|ein|eine|und|oder|aber|mit|von|zu|in|auf|für|ist|sind|war|waren|haben|hat|hatte|sein|seine|ich|du|er|sie|es|wir|ihr|sie)$/i.test(word))
         .slice(0, 3);
-      
-      console.log('Fallback words:', words);
+
+      //console.log('Fallback words:', words);
       return { NOUN: words };
     } catch (fallbackError) {
       console.error('Fallback keyword extraction failed:', fallbackError);

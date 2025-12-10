@@ -1,6 +1,6 @@
 
 // define global variables
-API_KEY = "Bearer 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";
+API_KEY = "Bearer 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";
 //API_URL_JOKE = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-v0.1";
 //API_URL_JOKE = "https://api-inference.huggingface.co/models/HuggingFaceH4/zephyr-7b-beta";
 API_URL_JOKE = "https://api-inference.huggingface.co/models/google/gemma-7b";
@@ -53,7 +53,7 @@ const inputPromptArray = ["Seinen Hit \"I'm Still Standing\" schrieb Elton John 
 "Walnüsse schlafen immer nur mit einer Nusshälfte, während die andere wach ist",
 ]
 const inputLength = inputPromptArray.length;
-const inputTemperature = (Math.random() * 0.1) + 0.7; // temperature for generating the joke
+const inputTemperature = 0.8 //(Math.random() * 0.1) + 0.7; // temperature for generating the joke
 const splitChar = "*"; // character to split the generated output into an array
 const tokenCount = 500; // desired length of the generated text in tokens
 
@@ -72,8 +72,37 @@ function createInputPrompt (inputPromptArray){
   for (var i = 0; i < inputPromptArray.length; i++){
     inputPrompt += inputPromptArray[i] + "*";
   }
+
+  prefix = ''//"Hier sind humorvolle, aber falsche Fakten:\n";
+  inputPrompt = prefix + inputPrompt;
+  inputPrompt += ''//"Antworte mit einem neuen, humorvollen Fakt. Er sollte genau den Tonfall haben wie die vorherigen, nicht auffallend ein Scherz sein, nicht übermaßig fantastisch oder übertrieben, sondern größtenteils wahr wirken, bis man genauer darüber nachdenkt. Nutze trocken Sprache und erfinde nicht zu viel, nur ein kleines bisschen. Starte direkt mit dem Fakt und verwende kein Einleitung wie \"Hier ist ein Fakt:\" oder ähnliches. Antworte nur mit dem Fakt selbst.";
   return inputPrompt;
 }
+
+
+
+/**
+   * Sends a query to the Hugging Face API and returns the result.
+   * @param {Object} data - The data to be sent in the request body.
+   * @returns {Promise<Object>} - A promise that resolves to the API response.
+   */
+async function query(data) {
+  const response = await fetch(
+   "https://router.huggingface.co/featherless-ai/v1/completions",
+    {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: API_KEY,
+      },
+      method: "POST",
+      body: JSON.stringify(data),
+    }
+  );
+  const result = await response.json();
+  return result;
+}  
+
+
 
 /**
  * Generates text based on the provided input using the GPT model.
@@ -88,23 +117,18 @@ function createInputPrompt (inputPromptArray){
  */
 function generateJoke(input, inputCount, temperature, token_count, splitChar, followFunction){
 
+  var temp = (Math.random() * 0.1) + temperature;
   query({
-    "inputs":
-      input,  
-    "parameters": {
-      //min_length: token_count,
-      //max_length: token_count,
-      temperature: temperature,
-      max_new_tokens: 70,
-    },
-    "options": {
-      wait_for_model: true,
-      use_cache: false,
-    },
-  }, API_URL_JOKE
+    model: "DiscoResearch/Llama3-German-8B",
+    max_tokens: 70,
+    prompt: input,
+    temperature: temp
+  }
   ).then((response) => {
-    output = JSON.stringify(response);
-    console.log(output);
+    //console.log(response);
+    //output = response.choices[0].message.content; // for task ChatCompletion
+    output = response.choices[0].text; // for task Completion/ TextGeneration
+    
     if (output.includes("Rate limit reached")) {
       window.alert("Rate limit reached. You reached free usage limit (reset hourly). Come back later. Maybe go for a walk or read a book in the meantime.");
       return;
@@ -113,19 +137,22 @@ function generateJoke(input, inputCount, temperature, token_count, splitChar, fo
     output = output.replace(/\\n/gm, splitChar);
     output = output.replace(/[\[\]\{\}\\]/g, "");
     output = output.replace("generated_text:", "");
+    
+    let res = output.split(splitChar)[0];
 
-    var outArray = output.split(splitChar);
-    res = outArray[inputCount];
+    console.log("Generated joke:", res, 'temperature:', temp);
+    
     if(res.length < 5 || res.length > 200 ){ //|| isNaughty(res)){
+      console.log("Regenerating joke due to length or content...");
       generateJoke(input, inputCount, temperature, token_count, splitChar, followFunction);
       return;
     }
     
-    console.log(res, "temperature: ", Math.round(temperature * 100) / 100);
-
-    followFunction(outArray[inputCount]);
+    
+    followFunction(res);
     
   }).catch((error) => {
+    console.error(error);
     window.alert(JSON.stringify(error))
   })
 }
@@ -137,20 +164,11 @@ function generateJoke(input, inputCount, temperature, token_count, splitChar, fo
  */
 function generateKeywords(input, followFunction){
 
-  query({
-    "inputs":
-      input,  
-    "parameters": {
-      
-    },
-    "options": {
-      wait_for_model: true,
-      use_cache: false,
-    },
-  }, API_URL_KEYWORDS
-  ).then((response) => {
-    output = JSON.stringify(response);
-    output = JSON.parse(output);
+  query_pos({
+   inputs: input,
+  }).then((response) => {
+    console.log(response);
+    output = response
 
     outArray_X = {};
     for (var i = 0; i < output.length; i++) {
@@ -165,18 +183,18 @@ function generateKeywords(input, followFunction){
     
     followFunction(outArray_X);
 
-  }).catch((error) => {window.alert(JSON.stringify(error))})
-  
+  }).catch((error) => {
+    console.error(error);
+    window.alert(JSON.stringify(error))
+  })
+
 }
 
-/**
-   * Sends a query to the Hugging Face API and returns the result.
-   * @param {Object} data - The data to be sent in the request body.
-   * @returns {Promise<Object>} - A promise that resolves to the API response.
-   */
-async function query(data, api_url) {
+
+
+async function query_pos(data) {
   const response = await fetch(
-    api_url,
+    "https://router.huggingface.co/hf-inference/models/vblagoje/bert-english-uncased-finetuned-pos",
     {
       headers: {
         "Content-Type": "application/json",

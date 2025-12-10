@@ -27,7 +27,7 @@ export const useBackgroundManager = (theme) => {
   useEffect(() => {
     if (theme && theme.backgroundTopics) {
       const topic = getRandomTopic(theme.backgroundTopics);
-      console.log('Loading initial background with topic:', topic);
+      //console.log('Loading initial background with topic:', topic);
       loadBackgroundImage(topic, 0);
     }
   }, [theme, loadBackgroundImage]);
@@ -46,26 +46,26 @@ export const useBackgroundManager = (theme) => {
         const posGroups = await analyzePartOfSpeech(generatedText);
         
         if (SEARCH_CONFIG.DEBUG_KEYWORDS) {
-          console.log('POS Analysis result:', posGroups);
+          //console.log('POS Analysis result:', posGroups);
         }
         
         searchKeywords = buildSearchKeywords(posGroups, SEARCH_CONFIG.USE_MULTIPLE_KEYWORDS);
         
         if (SEARCH_CONFIG.DEBUG_KEYWORDS) {
-          console.log('Built search keywords:', searchKeywords);
+          //console.log('Built search keywords:', searchKeywords);
         }
       } catch (error) {
         console.error('Error analyzing text for background:', error);
         searchKeywords = getRandomTopic(theme.backgroundTopics);
-        console.log('Error occurred, using theme topic:', searchKeywords);
+        //console.log('Error occurred, using theme topic:', searchKeywords);
       }
     } else {
       // For initial load or when no text is provided, use predefined topics
       searchKeywords = getRandomTopic(theme.backgroundTopics);
-      console.log('No text provided, using theme topic:', searchKeywords);
+      //console.log('No text provided, using theme topic:', searchKeywords);
     }
-    
-    console.log('Loading background for keywords:', searchKeywords);
+
+    //console.log('Loading background for keywords:', searchKeywords);
     await loadBackgroundImage(searchKeywords, nextIndex);
     
     // Smooth transition

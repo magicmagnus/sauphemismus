@@ -58,21 +58,23 @@ async function query(data) {
 
     //"https://api-inference.huggingface.co/models/HuggingFaceH4/zephyr-7b-beta",
     
-    "https://api-inference.huggingface.co/models/google/gemma-7b",
+    //"https://api-inference.huggingface.co/models/google/gemma-7b",
 
     //"https://api-inference.huggingface.co/models/benjamin/gpt2-wechsel-german",
     //"https://api-inference.huggingface.co/models/dbmdz/german-gpt2",
+
+    "https://router.huggingface.co/featherless-ai/v1/completions",
     {
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: "Bearer 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",
-      },
-      method: "POST",
-      body: JSON.stringify(data),
-    }
-  );
-  const result = await response.json();
-  return result;
+			headers: {
+				Authorization: `Bearer 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`,
+				"Content-Type": "application/json",
+			},
+			method: "POST",
+			body: JSON.stringify(data),
+		}
+	);
+	const result = await response.json();
+	return result;
 }
 
 function generate() {
@@ -80,36 +82,28 @@ function generate() {
   document.getElementsByClassName("loader")[0].style.display = "block";
   randomBg(randomTopic());
   var output = "";
-  var temperature = (Math.random() * 0.2) + 0.6
+  var temperature = 0.9 + (Math.random() * 0.2)
 
   
   query({
-    "inputs":
-      "Deine Aufgabe ist es, neue Ausdrücke für \"sich betrinken\" zu schreiben. Hier ist eine Liste: sich amtlich einen umzuhängen*sich einen hinter die Brust gleiten zu lassen*sich als einen Knacker zu bezeichnen*sich die Brause schütteln zu lassen*sich beinahe einen zu pummeln*sich einen steinernen Doktor zu adeln*sich ein Züchtbier zu servieren*sich eine harmonische Halbe zu vollfüllen*sich in ein Langwasser übertaumeln zu lassen*sich einen in die Fresse schäumen zu lassen*sich den Kopf umzurühren*sich die Wäsche abziehen zu lassen*sich glimpflich die Säfte zu mischen*sich einen in die Schüssel zu rühren*sich einen aufsteigen zu lassen*sich den Kübel zu düngen *sich einen in den Hals zu schütten*sich die Konserven zu öffnen*sich die Latschen besudeln zu lassen*sich einen in die Schädelhöhle zu rühren*sich ordentlich einen reinzulöten*sich wie ein Achtarmiger einen reinzuorgeln*sich einen hinter die Rüstung zu römern*sich ein Export zu importieren*sich einen aus der Fassung zu befreien*sich den Helm zu lackieren*sich die Kontakte feucht zu legen*sich einen Henkel vom Humpen zu brechen*sich den Schädel zu fluten*sich einen hinter die Kiemen zu peitschen*",
-    "parameters": {
-      //min_length: 500,
-      //max_length: 500,
-      temperature: temperature,
-      //do_sample: true, // more random, not real language????
-      //top_p: 0.8,
-      //top_k: 10,
-      max_new_tokens: 70,
-    },
-    "options": {
-      use_cache: false,
-      wait_for_model: true,
-    },
-  }).then((response) => {
-    console.log(JSON.stringify(response));
-    output = JSON.stringify(response);
+    model: "DiscoResearch/Llama3-German-8B",
+    prompt: "sich amtlich einen umzuhängen*sich einen hinter die Brust gleiten zu lassen*sich als einen Knacker zu bezeichnen*sich die Brause schütteln zu lassen*sich beinahe einen zu pummeln*sich einen steinernen Doktor zu adeln*sich ein Züchtbier zu servieren*sich eine harmonische Halbe zu vollfüllen*sich in ein Langwasser übertaumeln zu lassen*sich einen in die Fresse schäumen zu lassen*sich den Kopf umzurühren*sich die Wäsche abziehen zu lassen*sich glimpflich die Säfte zu mischen*sich einen in die Schüssel zu rühren*sich einen aufsteigen zu lassen*sich den Kübel zu düngen *sich einen in den Hals zu schütten*sich die Konserven zu öffnen*sich die Latschen besudeln zu lassen*sich einen in die Schädelhöhle zu rühren*sich ordentlich einen reinzulöten*sich wie ein Achtarmiger einen reinzuorgeln*sich einen hinter die Rüstung zu römern*sich ein Export zu importieren*sich einen aus der Fassung zu befreien*sich den Helm zu lackieren*sich die Kontakte feucht zu legen*sich einen Henkel vom Humpen zu brechen*sich den Schädel zu fluten*sich einen hinter die Kiemen zu peitschen*", 
+    max_tokens: 70,
+    temperature: temperature,
     
+  }).then((response) => {
+    console.log(response);
+    //output = JSON.stringify(response);
+    //output = response.choices[0].message.content; // for task ChatCompletion
+    output = response.choices[0].text; // for task Completion/ TextGeneration
     output = output.replace("\\n", "*");
     
-    var outArray = output.split("*");
-    
-    var sauphemismus = outArray[30];
+    var sauphemismus = output.split("*")[0];
+
+  
     var nice = 120;
     if (sauphemismus.length > nice || sauphemismus.length < 3 || isNaughty(sauphemismus)) {
+      console.log("Regenerating joke due to length or content...");
       generate();
       return;
     }

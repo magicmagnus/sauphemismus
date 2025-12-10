@@ -1,7 +1,7 @@
 import { NavLink } from 'react-router-dom';
 
 const TabNavigation = ({ themes }) => {
-  console.log('TabNavigation rendering with themes:', themes);
+  //console.log('TabNavigation rendering with themes:', themes);
   
   if (!themes) {
     return <div className="text-white p-4">No themes loaded</div>;
@@ -10,7 +10,7 @@ const TabNavigation = ({ themes }) => {
   return (
     <nav className="fixed top-0 left-0 right-0 bg-black/80 backdrop-blur-xl p-4 flex justify-center gap-4 z-[1000] border-b border-purple-500/30">
       {Object.entries(themes).map(([key, theme]) => {
-        console.log('Rendering tab:', key, theme);
+        //console.log('Rendering tab:', key, theme);
         return (
           <NavLink
             key={key}
