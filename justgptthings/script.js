@@ -77,11 +77,10 @@ function generateKeywords(input, followFunction){
     for (var i = 0; i < output.length; i++) {
       outArray_X[output[i].entity_group] = "";
     }
-    for (var i = 0; i < output.length; i++) {
-      if (outArray_X[output[i].entity_group] == "")
-        outArray_X[output[i].entity_group] = output[i].word;
-      else
-        outArray_X[output[i].entity_group] += "," + output[i].word;
+     for (var i = 0; i < output.length; i++) {
+      if (!output[i].word.includes("##")) {
+        outArray_X[output[i].entity_group] += output[i].word + ","
+      }
     }
     
     followFunction(outArray_X);

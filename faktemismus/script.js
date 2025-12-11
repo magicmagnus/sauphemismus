@@ -147,7 +147,7 @@ function generateJoke(input, inputCount, temperature, token_count, splitChar, fo
     
     let res = output.split(splitChar)[0];
 
-    console.log("Generated joke:", res, 'temperature:', temp);
+    //console.log("Generated joke:", res, 'temperature:', temp);
     
     if(res.length < 5 || res.length > 200 ){ //|| isNaughty(res)){
       console.log("Regenerating joke due to length or content...");
@@ -174,7 +174,6 @@ function generateKeywords(input, followFunction){
   query_pos({
    inputs: input,
   }).then((response) => {
-    console.log(response);
     output = response
 
     outArray_X = {};
@@ -182,10 +181,9 @@ function generateKeywords(input, followFunction){
       outArray_X[output[i].entity_group] = "";
     }
     for (var i = 0; i < output.length; i++) {
-      if (outArray_X[output[i].entity_group] == "")
-        outArray_X[output[i].entity_group] = output[i].word;
-      else
-        outArray_X[output[i].entity_group] += "," + output[i].word;
+      if (!output[i].word.includes("##")) {
+        outArray_X[output[i].entity_group] += output[i].word + ","
+      }
     }
     
     followFunction(outArray_X);
