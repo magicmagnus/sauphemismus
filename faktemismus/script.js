@@ -87,19 +87,26 @@ function createInputPrompt (inputPromptArray){
    * @returns {Promise<Object>} - A promise that resolves to the API response.
    */
 async function query(data) {
-  const response = await fetch(
-   "https://router.huggingface.co/featherless-ai/v1/completions",
-    {
+  try {
+    const response = await fetch('/.netlify/functions/huggingface', {
+      method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: API_KEY,
       },
-      method: "POST",
       body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
-  );
-  const result = await response.json();
-  return result;
+    
+    const result = await response.json();
+    return result;
+  } catch (error) {
+    console.error('API call failed:', error);
+    // Fallback oder Error handling
+    throw error;
+  }
 }  
 
 
@@ -193,19 +200,26 @@ function generateKeywords(input, followFunction){
 
 
 async function query_pos(data) {
-  const response = await fetch(
-    "https://router.huggingface.co/hf-inference/models/vblagoje/bert-english-uncased-finetuned-pos",
-    {
+  try {
+    const response = await fetch('/.netlify/functions/huggingface_pos_ger', {
+      method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: API_KEY,
       },
-      method: "POST",
       body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
-  );
-  const result = await response.json();
-  return result;
+    
+    const result = await response.json();
+    return result;
+  } catch (error) {
+    console.error('API call failed:', error);
+    // Fallback oder Error handling
+    throw error;
+  }
 }  
 
 /**

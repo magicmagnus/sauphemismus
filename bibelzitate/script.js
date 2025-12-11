@@ -1,60 +1,54 @@
 // generate from input----------------------------------------------------------
 async function query(data) {
-  const response = await fetch(
-    //"https://api-inference.huggingface.co/models/mistralai/Mistral-7B-v0.1",
-    //"https://api-inference.huggingface.co/models/EleutherAI/gpt-neo-1.3B",
-    //"https://api-inference.huggingface.co/models/openai-community/gpt2-xl",
-    //"https://api-inference.huggingface.co/models/bigscience/bloom",
-
-    //"https://api-inference.huggingface.co/models/HuggingFaceH4/zephyr-7b-beta",
-    
-    "https://api-inference.huggingface.co/models/google/gemma-7b",
-
-    //"https://api-inference.huggingface.co/models/benjamin/gpt2-wechsel-german",
-    //"https://api-inference.huggingface.co/models/dbmdz/german-gpt2",
-    {
+  try {
+    const response = await fetch('/.netlify/functions/huggingface', {
+      method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: "Bearer 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",
       },
-      method: "POST",
       body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
-  );
-  const result = await response.json();
-  return result;
+    
+    const result = await response.json();
+    return result;
+  } catch (error) {
+    console.error('API call failed:', error);
+    // Fallback oder Error handling
+    throw error;
+  }
 }
 
-function generate(input, inputCount, temperature, token_count, splitChar, followFunction, too_long){
+function generate(input, temperature, followFunction, max_length){
+
+  temp = temperature + (Math.random() * 0.2)
 
   query({
-    "inputs":
-      input,  
-    "parameters": {
-      //min_length: token_count,
-      //max_length: token_count,
-      temperature: temperature,
-      max_new_tokens: 70,
-    },
-    "options": {
-      use_cache: false,
-      wait_for_model: true,
-    },
+    model: "DiscoResearch/Llama3-German-8B",
+    prompt: input,
+    max_tokens: 70,
+    temperature: temp,
   }).then((response) => {
-    console.log(JSON.stringify(response));
-    output = JSON.stringify(response);
-    output = output.replace(/[\[\]\{\}\\"]/g, "");
-    output = output.replace(/\\n/gm, " ");
-    output = output.replace("generated_text:", "");
+    console.log(response);
+    //output = JSON.stringify(response);
+    //output = response.choices[0].message.content; // for task ChatCompletion
+    output = response.choices[0].text; // for task Completion/ TextGeneration
+    output = output.replace("\\n", "*");
+    
+    var res = output.split("*")[0];
 
-    var outArray = output.split(splitChar);
+    console.log("Generated text: " + res + '\t temperature: ' + temp);
 
-    if(outArray[inputCount].length > too_long){
-      generate(input, inputCount, temperature, token_count, splitChar, followFunction, too_long);
+    if(res.length > max_length){
+      console.log("Regenerating due to length...");
+      generate(input, temperature, followFunction, max_length);
       return;
     }
 
-    followFunction(outArray[inputCount]);
+    followFunction(res);
 
   }).catch((error) => {})
 }
@@ -120,14 +114,20 @@ function init(){
   var div = document.getElementById("bibelspruch");
   div.style.display = "none";
 
-  generate(
-    "Vorallem behüte dein Herz, denn es hat den größten Einfluss auf dein Leben!*Seid niemandem etwas schuldig, außer dass ihr euch untereinander liebt; denn wer den andern liebt, der hat das Gesetz erfüllt.*Der Herr ist nahe denen, die zerbrochenen Herzens sind, und er hilft denen, die zerschlagenen Geistes sind.*Er heilt, die zerbrochenen Herzens sind, und verbindet ihre Wunden.*Glaube, Hoffnung und Liebe, diese drei bleiben. Aber am größten ist die Liebe.*Gelobt sei der Herr täglich. Gott legt uns eine Last auf, aber er hilft uns auch.*Gott ist die Liebe und wer in der Liebe bleibt, der bleibt in Gott und Gott in ihm.*Der Herr ist mein Licht und mein Heil; vor wem sollte ich mich fürchten! Der Herr ist meines Lebens Kraft; vor wem sollte mir grauen!*Ich behalte dein Wort in meinen Herzen damit ich nicht wieder dich sündige.*Ein frohes Herz macht ein glückliches Gesicht; ein gebrochenes Herz betrübt den Geist.Sei mutig und entschlossen! Lass dich nicht einschüchtern, und hab keine Angst! Denn ich, der Herr, dein Gott, bin bei dir, wohin du auch gehst.*",
-    10, 0.9, 500, "*", neuerSpruch, 150);
+  tempZitate = 1.0;
+  tempNamen = 1.0;
 
   generate(
-    "Jesaia*Jeremia*Baruch*Ezechiel*Daniel*Hosea*Joel*Amos*Obadiah*Jonah*Micah*Nahum*Habakuk*Zephaniah*Haggai*Zacharias*Malachias*Matthäus*Markus*Lukas*Johannes*",
-    21, 1.0, 100, "*", neuerAutor, 100);
+    input="Vorallem behüte dein Herz, denn es hat den größten Einfluss auf dein Leben!*Seid niemandem etwas schuldig, außer dass ihr euch untereinander liebt; denn wer den andern liebt, der hat das Gesetz erfüllt.*Der Herr ist nahe denen, die zerbrochenen Herzens sind, und er hilft denen, die zerschlagenen Geistes sind.*Er heilt, die zerbrochenen Herzens sind, und verbindet ihre Wunden.*Glaube, Hoffnung und Liebe, diese drei bleiben. Aber am größten ist die Liebe.*Gelobt sei der Herr täglich. Gott legt uns eine Last auf, aber er hilft uns auch.*Gott ist die Liebe und wer in der Liebe bleibt, der bleibt in Gott und Gott in ihm.*Der Herr ist mein Licht und mein Heil; vor wem sollte ich mich fürchten! Der Herr ist meines Lebens Kraft; vor wem sollte mir grauen!*Ich behalte dein Wort in meinen Herzen damit ich nicht wieder dich sündige.*Ein frohes Herz macht ein glückliches Gesicht; ein gebrochenes Herz betrübt den Geist.Sei mutig und entschlossen! Lass dich nicht einschüchtern, und hab keine Angst! Denn ich, der Herr, dein Gott, bin bei dir, wohin du auch gehst.*",
+    temperature=tempZitate, 
+    followFunction=neuerSpruch, 
+    max_length=185);
 
+  generate(
+    "Jesaia*Jeremia*Baruch*Daniel*Hosea*Joel*Amos*Haggai*Zacharias*Malachias*Matthäus*Markus*Obadiah*Jonah*Micah*Johannes*Nahum*Lukas*Habakuk*Zephaniah*Ezechiel*",
+      temperature=tempNamen, 
+      followFunction=neuerAutor, 
+      max_length=30);
 
   if(background)
     card_bg = document.getElementById("bg2");

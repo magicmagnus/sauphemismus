@@ -1,176 +1,74 @@
-
 <!DOCTYPE html>
-
 <html lang="de">
 
-  <head>
+<head>
+  <meta charset="UTF-8" />
+  <title>Sauphemismus</title>
+  <link rel="icon"
+    href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🍻</text></svg>">
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat" />
+</head>
 
-    <meta charset="UTF-8" />
+<div class="bg_div" id="bg1"></div>
+<div class="bg_div" id="bg2"></div>
 
-    <title>Sauphemismus</title>
+<body>
 
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🍻</text></svg>">
+  <div id="vh100">
+    <h2>Pilzfinder</h2>
 
-    <link rel="stylesheet" href="style.css" />
-
-    <link
-
-      rel="stylesheet"
-
-      href="https://fonts.googleapis.com/css2?family=Montserrat"
-
-    />
-
-  </head>
-
-  
-
-  <div class="bg_div" id="bg1"></div>
-
-  <div class="bg_div" id="bg2"></div>
-
-  <body>
-
-    
-
-    <div id="vh100">
-
-      <h2>Pilzfinder</h2>
-
-      
-
-        <button onclick="generate()" class="button1">
-
-          <p>Das kann nur eines sein: ein..</p>
-
-          <div class="loader"></div>
-
-        </button>
-
-        <div id="query"></div>
-
-        <div id="share_history">
-
-          <div id="share"></div>
-
-          <button
-
-            onclick="toggle_history()"
-
-            id="toggle-history"
-
-            class="button2"
-
-            style="display: none"
-
-          >
-
-            <p>Verlauf</p>
-
-            <span class="arrow">
-
-              <span class="arrow-left"></span>
-
-              <span class="arrow-right"></span>
-
-            </span>
-
-          </button>
-
-        </div>
-
-     
-
-    
-
-      <ul id="history" style="display: none"></ul>
-
+    <button onclick="generate()" class="button1">
+      <p>Oh, ist das ein ...</p>
+      <div class="loader"></div>
+    </button>
+    <div id="query"></div>
+    <div id="share_history">
+      <div id="share"></div>
+      <button onclick="toggle_history()" id="toggle-history" class="button2" style="display: none">
+        <p>History</p>
+        <span class="arrow">
+          <span class="arrow-left"></span>
+          <span class="arrow-right"></span>
+        </span>
+      </button>
     </div>
 
 
+    <ul id="history" style="display: none"></ul>
+  </div>
 
-    <div id="info">
-
-      <input type="checkbox" id="info-toggle" checked />
-
-      <label for="info-toggle" id="info-toggle-btn">
-
-        <svg
-
-          xmlns="http://www.w3.org/2000/svg"
-
-          x="0px"
-
-          y="0px"
-
-          width="24"
-
-          height="24"
-
-          viewBox="0 0 22 22"
-
-          style="fill: #fff"
-
-        >
-
-          <path
-
-            d="M 12 2 C 6.4889971 2 2 6.4889971 2 12 C 2 17.511003 6.4889971 22 12 22 C 17.511003 22 22 17.511003 22 12 C 22 6.4889971 17.511003 2 12 2 z M 12 4 C 16.430123 4 20 7.5698774 20 12 C 20 16.430123 16.430123 20 12 20 C 7.5698774 20 4 16.430123 4 12 C 4 7.5698774 7.5698774 4 12 4 z M 11 7 L 11 9 L 13 9 L 13 7 L 11 7 z M 11 11 L 11 17 L 13 17 L 13 11 L 11 11 z"
-
-          ></path>
-
-        </svg>
-
-      </label>
-
-      <div id="info-card">
-
-        <h3>Info</h3>
-
-        <p>
-
-          Bock heute abend?<br />
-
-          Hier kannst du mithilfe von Künstlicher Intelligenz rausfinden, was du
-
-          heute Abend mit deinen Partymäusen machen könntest. <br />
-
-          Oder immerhin neu generierte Euphemismen finden, für den Plan den ihr
-
-          sowieso hattet...Naja fürs Saufen eben...<br />
-
-        </p>
-
-        <p>
-
-          Disclaimer: Da wir mit einer generativen Künstlichen Intelligenz
-
-          arbeiten, kann es zu sehr kreativen aber auch anstößigen Inhalten
-
-          kommen, die ungefiltert ausgegeben werden. Lol.
-
-        </p>
-
-        <small>© By Maggi & Fridl</small><br /><br />
-
-        <small>Credits zur KI:</small>
-
-        <a
-
-          href="https://github.com/kingoflolz/mesh-transformer-jax"
-
-          target="_blank"
-
-          >GPT-J-6B: A 6 Billion Parameter Autoregressive Language Model</a
-
-        >
-
-      </div>
-
+  <div id="info">
+    <input type="checkbox" id="info-toggle" checked />
+    <label for="info-toggle" id="info-toggle-btn">
+      <svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="24" height="24" viewBox="0 0 22 22"
+        style="fill: #fff">
+        <path
+          d="M 12 2 C 6.4889971 2 2 6.4889971 2 12 C 2 17.511003 6.4889971 22 12 22 C 17.511003 22 22 17.511003 22 12 C 22 6.4889971 17.511003 2 12 2 z M 12 4 C 16.430123 4 20 7.5698774 20 12 C 20 16.430123 16.430123 20 12 20 C 7.5698774 20 4 16.430123 4 12 C 4 7.5698774 7.5698774 4 12 4 z M 11 7 L 11 9 L 13 9 L 13 7 L 11 7 z M 11 11 L 11 17 L 13 17 L 13 11 L 11 11 z">
+        </path>
+      </svg>
+    </label>
+    <div id="info-card">
+      <h3>Info</h3>
+      <p>
+        <br />
+        Here you can use artificial intelligence to find
+        out what you could do with your party mates tonight. <br />
+        Or at least find newly generated euphemisms for the plan you
+        had anyway... Well, for boozing...<br />
+      </p>
+      <p>
+        Disclaimer: Since we work with a generative artificial intelligence,
+        there can be very creative but also offensive content that is output
+        unfiltered. Lol.
+      </p>
+      <small>© By Maggi & Fridl</small><br /><br />
+      <small>Credits zur KI:</small>
+      <a href="https://github.com/kingoflolz/mesh-transformer-jax" target="_blank">GPT-J-6B: A 6 Billion Parameter
+        Autoregressive Language Model</a>
     </div>
-
-    <script src="script.js"></script>
-
-  </body>
+  </div>
+  <script src="script.js"></script>
+</body>
 
 </html>

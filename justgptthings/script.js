@@ -18,50 +18,45 @@ API_URL_KEYWORDS = "https://api-inference.huggingface.co/models/vblagoje/bert-en
  * Generates text based on the provided input using the GPT model.
  *
  * @param {string} input - The input text to generate from.
- * @param {number} inputCount - The index of the generated text in the output array.
+ 
  * @param {number} temperature - The temperature value for controlling randomness in the generated text.
- * @param {number} token_count - The desired length of the generated text in tokens.
  * @param {string} splitChar - The character used to split the generated output into an array.
  * @param {function} followFunction - The function to be called with the generated text.
  * @returns {void}
  */
-function generateJoke(input, inputCount, temperature, token_count, splitChar, followFunction){
+function generateJoke(input, temperature, splitChar, followFunction){
 
+  var temp = (Math.random() * 0.1) + temperature;
   query({
-    "inputs":
-      input,  
-    "parameters": {
-      //min_length: token_count,
-      //max_length: token_count,
-      temperature: temperature,
-      max_new_tokens: 50,
-    },
-    "options": {
-      wait_for_model: true,
-      use_cache: false,
-    },
-  }, API_URL_JOKE
-  ).then((response) => {
-    output = JSON.stringify(response);
-    console.log(output);
+    model: "DiscoResearch/Llama3-German-8B",
+    prompt: input,
+    max_tokens: 70,
+    temperature: temp,
+  }).then((response) => {
+    console.log(response);
+    //output = JSON.stringify(response);
+    //output = response.choices[0].message.content; // for task ChatCompletion
+    output = response.choices[0].text; // for task Completion/ TextGeneration
+    console.log("Raw output: " + output);
     output = output.replace(/\n/g, splitChar);
     output = output.replace(/\\n/gm, splitChar);
     output = output.replace(/[\[\]\{\}\\"]/g, "");
     output = output.replace("generated_text:", "");
     
 
-    var outArray = output.split(splitChar);
-    res = outArray[inputCount];
+    let res = output.split(splitChar)[0];
+
+     console.log("Generated joke:", res, 'temperature:', temp);
     if(res.length < 5 || res.length > 200 ){ //|| isNaughty(res)){
-      generateJoke(input, inputCount, temperature, token_count, splitChar, followFunction);
+      generateJoke(input, temperature, splitChar, followFunction);
       return;
     }
 
-    followFunction(outArray[inputCount]);
+    followFunction(res);
     
   }).catch((error) => {
-    error = JSON.stringify(error);
-    window.alert("Whoops, something went wrong: " + error);
+    console.error(error);
+    //window.alert("Whoops, something went wrong: " + error);
   })
 }
 
@@ -72,18 +67,9 @@ function generateJoke(input, inputCount, temperature, token_count, splitChar, fo
  */
 function generateKeywords(input, followFunction){
 
-  query({
-    "inputs":
-      input,  
-    "parameters": {
-      
-    },
-    "options": {
-      wait_for_model: true,
-      use_cache: false,
-    },
-  }, API_URL_KEYWORDS
-  ).then((response) => {
+  query_pos({
+   inputs: input,
+  }).then((response) => {
     output = JSON.stringify(response);
     output = JSON.parse(output);
 
@@ -109,20 +95,50 @@ function generateKeywords(input, followFunction){
    * @param {Object} data - The data to be sent in the request body.
    * @returns {Promise<Object>} - A promise that resolves to the API response.
    */
-async function query(data, api_url) {
-  const response = await fetch(
-    api_url,
-    {
+async function query(data) {
+  try {
+    const response = await fetch('/.netlify/functions/huggingface', {
+      method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: API_KEY,
       },
-      method: "POST",
       body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
-  );
-  const result = await response.json();
-  return result;
+    
+    const result = await response.json();
+    return result;
+  } catch (error) {
+    console.error('API call failed:', error);
+    // Fallback oder Error handling
+    throw error;
+  }
+}  
+
+async function query_pos(data) {
+  try {
+    const response = await fetch('/.netlify/functions/huggingface_pos_ger', {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const result = await response.json();
+    return result;
+  } catch (error) {
+    console.error('API call failed:', error);
+    // Fallback oder Error handling
+    throw error;
+  }
 }  
 
 /**
@@ -213,9 +229,13 @@ function onButtonClick(){
   var div = document.getElementById("joke_wrapper");
   div.style.display = "none";
 
+  var temperature = 0.9
+
   generateJoke(
-    "when boys wear beanies*craving adventure 24/7*watching it rain*having the perfect shoes to go with your outfit*playing with your cat*wanting the perfect prom dress*getting a nose ring*trying not to wear the same outfit twice*having a cute hairstyle*being weird*painting your nails pastel colors for the spring time*coffee on chilly fall days*wishing you had enough money to travel the world*loving the warmth of their arms*making pinky promises*going on tumblr too much*loving to spend time with your best friend*christmas treats*soft neck kisses*growing your hair out*lazy fall days*taking your bra off after a long day*popcorn and movies*wanting to get away for a while*wanting cute, small tattoos*netflix and chill*being close to your sister*staying in bed all day*watching it rain*getting along better with guys than girls*making funny faces*",
-    31, 1.3, 220, "*", updateJoke);
+    input="when boys wear beanies*craving adventure 24/7*watching it rain*having the perfect shoes to go with your outfit*playing with your cat*wanting the perfect prom dress*getting a nose ring*trying not to wear the same outfit twice*having a cute hairstyle*being weird*painting your nails pastel colors for the spring time*coffee on chilly fall days*wishing you had enough money to travel the world*loving the warmth of their arms*making pinky promises*going on tumblr too much*loving to spend time with your best friend*christmas treats*soft neck kisses*growing your hair out*lazy fall days*taking your bra off after a long day*popcorn and movies*wanting to get away for a while*wanting cute, small tattoos*netflix and chill*being close to your sister*staying in bed all day*watching it rain*getting along better with guys than girls*making funny faces*",
+    temperature=temperature,  
+    splitChar="*", 
+    followFunction=updateJoke);
   
 }
 
@@ -228,10 +248,13 @@ function updateJoke(input_joke){
   joke_show = joke_gen;
   joke_gen = input_joke;
   // generate an extra joke at first call
+  var temperature = 0.9;
   if (joke_show == ""){
     generateJoke(
-      "when boys wear beanies*craving adventure 24/7*watching it rain*having the perfect shoes to go with your outfit*playing with your cat*wanting the perfect prom dress*getting a nose ring*trying not to wear the same outfit twice*having a cute hairstyle*being weird*painting your nails pastel colors for the spring time*coffee on chilly fall days*wishing you had enough money to travel the world*loving the warmth of their arms*making pinky promises*going on tumblr too much*loving to spend time with your best friend*christmas treats*soft neck kisses*growing your hair out*lazy fall days*taking your bra off after a long day*popcorn and movies*wanting to get away for a while*wanting cute, small tattoos*netflix and chill*being close to your sister*staying in bed all day*watching it rain*getting along better with guys than girls*making funny faces*",
-      31, 1.3, 220, "*", updateJoke);
+      input="when boys wear beanies*craving adventure 24/7*watching it rain*having the perfect shoes to go with your outfit*playing with your cat*wanting the perfect prom dress*getting a nose ring*trying not to wear the same outfit twice*having a cute hairstyle*being weird*painting your nails pastel colors for the spring time*coffee on chilly fall days*wishing you had enough money to travel the world*loving the warmth of their arms*making pinky promises*going on tumblr too much*loving to spend time with your best friend*christmas treats*soft neck kisses*growing your hair out*lazy fall days*taking your bra off after a long day*popcorn and movies*wanting to get away for a while*wanting cute, small tattoos*netflix and chill*being close to your sister*staying in bed all day*watching it rain*getting along better with guys than girls*making funny faces*",
+      temperature=temperature, 
+      splitChar="*",
+      followFunction=updateJoke);
       return
   }
 

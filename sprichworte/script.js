@@ -1,72 +1,51 @@
-// IN this script, we use calls to API to generate text ("jokes") based on input (a list of "jokes") and show it on the website.
-// We also use the generated text to extract keywords and use them to generate a random background image.
-// The script is used to create a website that shows a random joke and a random background image based on the keywords of the joke.
-
-// define global variables
+// global variables
 API_KEY = "Bearer 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";
-//API_URL_JOKE = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-v0.1";
-//API_URL_JOKE = "https://api-inference.huggingface.co/models/HuggingFaceH4/zephyr-7b-beta";
-API_URL_JOKE = "https://api-inference.huggingface.co/models/google/gemma-7b";
-//API_URL_JOKE = "https://api-inference.huggingface.co/models/EleutherAI/gpt-neo-1.3B";
-//API_URL_JOKE = "https://api-inference.huggingface.co/models/dbmdz/german-gpt2";
-
-API_URL_KEYWORDS = "https://api-inference.huggingface.co/models/KoichiYasuoka/bert-base-german-upos";
+API_URL_JOKE = "https://api-inference.huggingface.co/models/HuggingFaceH4/zephyr-7b-beta";
+API_URL_KEYWORDS =  "https://api-inference.huggingface.co/models/KoichiYasuoka/bert-base-german-upos";
 
 
-// --------------------------------------------------------------------------------------------
-// General functions for generating text and keywords, and setting background images
-/**
- * Generates text based on the provided input using the GPT model.
- *
- * @param {string} input - The input text to generate from.
- * @param {number} inputCount - The index of the generated text in the output array.
- * @param {number} temperature - The temperature value for controlling randomness in the generated text.
- * @param {number} token_count - The desired length of the generated text in tokens.
- * @param {string} splitChar - The character used to split the generated output into an array.
- * @param {function} followFunction - The function to be called with the generated text.
- * @returns {void}
- */
 function generateJoke(input, inputCount, temperature, token_count, splitChar, followFunction){
 
+  var temp = (Math.random() * 0.1) + temperature;
   query({
-    "inputs":
-      input,  
-    "parameters": {
-      //min_length: token_count,
-      //max_length: token_count,
-      temperature: temperature,
-      max_new_tokens: 70,
-    },
-    "options": {
-      wait_for_model: true,
-      use_cache: false,
-    },
-  }, API_URL_JOKE
+    model: "DiscoResearch/Llama3-German-8B",
+    max_tokens: 70,
+    prompt: input,
+    temperature: temp
+  }
   ).then((response) => {
-    output = JSON.stringify(response);
-    console.log(output);
+    //console.log(response);
+    //output = response.choices[0].message.content; // for task ChatCompletion
+    output = response.choices[0].text; // for task Completion/ TextGeneration
+    
+    if (output.includes("Rate limit reached")) {
+      window.alert("Rate limit reached. You reached free usage limit (reset hourly). Come back later. Maybe go for a walk or read a book in the meantime.");
+      return;
+    }
     output = output.replace(/\n/g, splitChar);
     output = output.replace(/\\n/gm, splitChar);
-    output = output.replace(/[\[\]\{\}\\"]/g, "");
+    output = output.replace(/[\[\]\{\}\\]/g, "");
     output = output.replace("generated_text:", "");
     
+    let res = output.split(splitChar)[0];
 
-    var outArray = output.split(splitChar);
-    res = outArray[inputCount];
+    console.log("Generated joke:", res, 'temperature:', temp);
+    
     if(res.length < 5 || res.length > 200 ){ //|| isNaughty(res)){
+      console.log("Regenerating joke due to length or content...");
       generateJoke(input, inputCount, temperature, token_count, splitChar, followFunction);
       return;
     }
     
-    console.log(res, "temperature: ", Math.round(temperature * 100) / 100);
-
-    followFunction(outArray[inputCount]);
+    
+    followFunction(res);
     
   }).catch((error) => {
-    error = JSON.stringify(error);
-    window.alert("Whoops, something went wrong: " + error);
+    console.error(error);
+    window.alert(JSON.stringify(error))
   })
 }
+
 
 /**
  * Generates keywords based on the input and calls the followFunction with the generated keywords.
@@ -107,31 +86,31 @@ function generateKeywords(input, followFunction){
   
 }
 
-/**
-   * Sends a query to the Hugging Face API and returns the result.
-   * @param {Object} data - The data to be sent in the request body.
-   * @returns {Promise<Object>} - A promise that resolves to the API response.
-   */
-async function query(data, api_url) {
-  const response = await fetch(
-    api_url,
-    {
+  
+async function query(data) {
+  try {
+    const response = await fetch('/.netlify/functions/huggingface', {
+      method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: API_KEY,
       },
-      method: "POST",
       body: JSON.stringify(data),
-    }
-  );
-  const result = await response.json();
-  return result;
-}  
+    });
 
-/**
- * Sets a random background image for the specified topic.
- * @param {string} topic - The topic for the background image.
- */
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const result = await response.json();
+    return result;
+  } catch (error) {
+    console.error('API call failed:', error);
+    // Fallback oder Error handling
+    throw error;
+  }
+}  
+  
+
 async function randomBg(topic) {
   const width = document.documentElement.clientWidth + 10;
   const height = document.documentElement.clientHeight + 10;
@@ -145,7 +124,7 @@ async function randomBg(topic) {
   const data = await response.json();
   
   // chose a random image from the response (depending on the number of hits)
-  const randomIndex = Math.floor(Math.random() * data.hits.length) - 1;
+  const randomIndex = Math.floor(Math.random() * data.hits.length);
   const imageUrl = data.hits[randomIndex].largeImageURL;
   
   const div = background ? document.getElementById("bg1") : document.getElementById("bg2");
@@ -155,17 +134,22 @@ async function randomBg(topic) {
   div.style.backgroundPosition = 'center';
 }
 
+function randomFont(){
+  array = ["Josefin Slab", "Bodoni Moda", "Bitter", "Amatic SC", "Antic Slab", "Yeseva One"]
+  random = Math.floor(Math.random() * array.length);
+  return array[random];
+}
 
-/**
- * Generates a random background based on the keywords extracted from the given text.
- * @param {object} text - The text object containing different parts of speech as keys and corresponding words as values.
- */
-function keywords2Bg(text){
+function randomTopic(){
+  array = ["Humans", "Love", "Sunset", "Beach", "Books", "Stone", "River", "Food", "Wisdom", "lifestyle", "roadtrip","Philosophy"]
+  random = Math.floor(Math.random() * array.length);
+  return array[random];
+}
+
+function keywords2BG(text){
 
   if ("NOUN" in text)
     var keywords = text["NOUN"];
-  else if ("PROPN" in text)
-    var keywords = text["PROPN"];
   else if ("VERB" in text)
     var keywords = text["VERB"];
   else if ("ADJ" in text)
@@ -177,42 +161,38 @@ function keywords2Bg(text){
 
   if ("NOUN" in text && "VERB" in text)
     var keywords = text["NOUN"] + "," + text["VERB"]; 
-  else if ("PROPN" in text && "VERB" in text)
-    var keywords = text["PROPN"] + "," + text["VERB"];
-
   if ("NOUN" in text && "VERB" in text && "ADV" in text)
     var keywords = text["NOUN"] + "," + text["VERB"] + "," + text["ADV"];
-  else if ("PROPN" in text && "VERB" in text && "ADV" in text)
-    var keywords = text["PROPN"] + "," + text["VERB"] + "," + text["ADV"];
-
   if ("NOUN" in text && "VERB" in text && "ADJ" in text)
     var keywords = text["NOUN"] + "," + text["VERB"] + "," + text["ADJ"];
-  else if ("PROPN" in text && "VERB" in text && "ADJ" in text)
-    var keywords = text["PROPN"] + "," + text["VERB"] + "," + text["ADJ"];
-  
-  // if no keywords found, use default
-  if (keywords == "")
-    keywords = "nice sunset";
+  //if ("NOUN" in text && "VERB" in text && "ADP" in text)
+  //  var keywords = text["NOUN"] + "," + text["VERB"] + "," + text["ADP"];
+  //if ("NOUN" in text && "VERB" in text && "ADV" in text && "ADJ" in text)
+  //  var keywords = text["NOUN"] + "," + text["VERB"] + "," + text["ADV"] + "," + text["ADJ"] ;
+  //if ("NOUN" in text && "VERB" in text && "ADV" in text && "ADJ" in text && "ADP" in text)
+  //  var keywords = text["NOUN"] + "," + text["VERB"] + "," + text["ADV"] + "," + text["ADJ"] + "," + text["ADP"];
 
-  // generate and set random background
+
   randomBg(keywords);
 
-}  
-
-function randomFont(){
-  array = ["Josefin Slab", "Bodoni Moda", "Bitter", "Amatic SC", "Antic Slab", "Yeseva One"]
-  random = Math.floor(Math.random() * array.length);
-  return array[random];
 }
 
-// --------------------------------------------------------------------------------------------
-// Version 1 of the button handling and joke generation
+// generate from input----------------------------------------------------------
+var running = false;
+var spruch_g = false;
+var autor_g = false;
+var background = false;
+
+document.onload = randomBg("nice sunset");
+document.onload = init();
+  
+
+  
 
 
-/**
- * Handles the button click event.
- */
-function onButtonClick(){
+
+
+function init(){
   if(running)
     return;
   
@@ -220,53 +200,45 @@ function onButtonClick(){
   var loader = document.getElementsByClassName("loader")[0];
   loader.style.display = "block";
 
-  var div = document.getElementById("joke_wrapper");
+  var div = document.getElementById("sprichwort");
   div.style.display = "none";
-  //div.style.fontFamily = randomFont();
 
   generateJoke(
     "Da wird der Hund in der Pfanne verrückt*Jetzt lass mal die Kirche im Dorf*Der frühe Vogel fängt den Wurm*Auch ein blindes Huhn findet mal ein Korn*Einem geschenkten Gaul schaut man nicht ins Maul*Die Katze aus dem Sack lassen*Was der Bauer nicht kennt, frisst er nicht*Drei Bier sind eine Mahlzeit und dann hat man noch nichts getrunken*Lieber 'nen Spatz auf der Hand als ne Taube auf dem Dach*Morgenstund hat Gold im Mund*Müßiggang ist aller Laster Anfang*Liebe geht durch den Magen*Das Auge isst mit*Tübingen ist ein Dorf*Wer schön sein will, muss leiden*Ist die Katze aus dem Haus, tanzen die Mäuse auf dem Tisch*Wer im Glashaus sitzt soll nicht im Dunkeln scheißen*Kleinvieh macht auch Mist*Reden ist Silber, Schweigen ist Gold*Eine Hand wäscht die andere*Unkraut vergeht nicht*Wer den Pfennig nicht ehrt, ist des Talers nicht wert*Pech im Spiel, Glück in der Liebe*Viele Köche verderben den Brei*Lügen haben kurze Beine*Gelegenheit macht Diebe*Der Apfel fällt nicht weit vom Stamm*Wie man in den Wald hineinruft, so schallt es heraus*",
-    30, (Math.random() * 0.1) + 0.9, 500, "*", updateJoke);
-  
+    30, 0.99, 500, "*", neuerSpruch);
+
+
+  //generate(
+  //  
+  //  "Frank Dekelbach*Barbara Tanzilli*Max Feind*Ernest Moore*Ursula Ewland*Judith Anne Vönt*Ralph Berndt*Wilfried Schlotter*Alfred Röthlisberger*Peter Zwerschke*Edith Bölke*Hans-Jürgen Dötsch*Anett Reisinger*Jürgen Brümmendorf*Antonia Hilmar*Simone Godelbrun*Leonie Geidenhart*Dirk Pinzone*Katharina Kirtola*Claudia Salomanov*Roland Huggenbusch*Vera Mitja Hofmeister*Michael Karlheinz Steinbildner*Antje Herrmann*",
+  //  24, 0.95, 180, "*", neuerAutor);
+
+  //generate(
+  //  "mag gerne Pferde-hat ein Alkoholproblem-lernt gerne Leute kennen-ist im Nebenjob Barkeeper-studiert Philosophie im 3. Semester-ist begeisterter Hobbygärtnerin-hat keine echte Freundin-hat das Gefühl, alles zu können-hat einen Traum-hat das Gefühl, jemand zu lieben, den sie nicht lieben kann-hat ein spannendes Leben-fragt sich immer wieder, ob das Leben genug war-hat Lust auf Geld-hat das Gefühl, alles zu können-ist spät dran-denkt viel über sein Leben nach-ist glücklich, wenn es ihr gut geht-weiß nicht, was das Leben ihm bringen soll-hat eine Leidenschaft für Tischtennis-hat Lust auf jemanden, den er lieben könnte-ist unvoreingenommen-hat viele Güter in seinem Haus-ist zufrieden mit seinen persönlichen Fähigkeiten-schläft häufig-denkt oft über die Welt nach-",
+  //  25, 0.85, 360, "-", neuerAutorBio);
 }
 
 
-/**
- * Generates the next joke (joke_gen) and updates the display to show the new joke (joke_show)
- * @param {string} input_joke - The new joke.
- */
-function updateJoke(input_joke){
-  joke_show = joke_gen;
-  joke_gen = input_joke;
-  // generate an extra joke at first call
-  if (joke_show == ""){
-    generateJoke(
-      "Da wird der Hund in der Pfanne verrückt*Jetzt lass mal die Kirche im Dorf*Der frühe Vogel fängt den Wurm*Auch ein blindes Huhn findet mal ein Korn*Einem geschenkten Gaul schaut man nicht ins Maul*Die Katze aus dem Sack lassen*Was der Bauer nicht kennt, frisst er nicht*Drei Bier sind eine Mahlzeit und dann hat man noch nichts getrunken*Lieber 'nen Spatz auf der Hand als ne Taube auf dem Dach*Morgenstund hat Gold im Mund*Müßiggang ist aller Laster Anfang*Liebe geht durch den Magen*Das Auge isst mit*Tübingen ist ein Dorf*Wer schön sein will, muss leiden*Ist die Katze aus dem Haus, tanzen die Mäuse auf dem Tisch*Wer im Glashaus sitzt soll nicht im Dunkeln scheißen*Kleinvieh macht auch Mist*Reden ist Silber, Schweigen ist Gold*Eine Hand wäscht die andere*Unkraut vergeht nicht*Wer den Pfennig nicht ehrt, ist des Talers nicht wert*Pech im Spiel, Glück in der Liebe*Viele Köche verderben den Brei*Lügen haben kurze Beine*Gelegenheit macht Diebe*Der Apfel fällt nicht weit vom Stamm*Wie man in den Wald hineinruft, so schallt es heraus*",
-      30, 0.9, 500, "*", updateJoke);
-      return
-  }
 
-  var joke = document.getElementById("joke");
-  if (joke_show.endsWith(" "))
-    joke_show = joke_show.substring(0, joke_show.length - 1);
-  if (!joke_show.endsWith(".") || !joke_show.endsWith("!") || !joke_show.endsWith("?"))
-    joke.innerHTML = joke_show +".";
+function neuerSpruch(text){
 
-  joke.style.fontFamily = randomFont();
+  var spruch = document.getElementById("spruch");
+  spruch.innerHTML = text;
+
+  var div = document.getElementById("sprichwort");
+  div.style.fontFamily = randomFont();
+
+  show_new();
   
-  toggleBackgroundAndShowNew();
-
 }
 
+function show_new(){
 
-/**
- * Toggles the background and shows a new topic.
- */
-function toggleBackgroundAndShowNew() {
-  if (background) {
+  if(background){
     bg = document.getElementById("bg1");
     nbg = document.getElementById("bg2");
-  } else {
+  }
+  else{
     bg = document.getElementById("bg2");
     nbg = document.getElementById("bg1");
   }
@@ -275,59 +247,76 @@ function toggleBackgroundAndShowNew() {
   nbg.style.backgroundImage = "";
   background = !background;
 
-  new_topic = generateKeywords(joke_gen, keywords2Bg);
-  var div = document.getElementById("joke_wrapper");
+  randomBg(randomTopic());
+  var div = document.getElementById("sprichwort");
   div.style.display = "grid";
 
   var loader = document.getElementsByClassName("loader")[0];
   loader.style.display = "none";
 
+  spruch_g = false;
+  autor_g = false;
   running = false;
+
 }
-
-// --------------------------------------------------------------------------------------------
-// end of version 1
-
-// generate from input----------------------------------------------------------
-var running = false; // is the joke generation running?
-var background = false; // false: bg1 is shown, true: bg2 is shown
-var joke_gen = ""; // this is the joke that is stored in the background
-var joke_show = ""; // this is the joke that is shown on the website
-
-var author = document.getElementById("author");
-  const bangersFont = new FontFace('UCUCharlesScript', 'url(UCUcharlesscript.ttf)');
-  bangersFont.load().then(function (loadedFont) {
-    document.fonts.add(loadedFont)
-    author.style.fontFamily = '"UCUCharlesScript"';
-  });
-
-document.onload = randomBg("nice sunset");
-document.onload = onButtonClick();
-
-// --------------------------------------------------------------------------------------------
-// Version 2 of the button handling and joke generation
-// in version 1, the timeline was:
-// 1. button click, 2.  hide current joke and show loader, 3. start generate joke_gen, 4. wait for joke_gen to finish, 5. show joke_show and show new BG and hide loader, 6. update joke_show to joke_gen for next iteration
-// this leads to a delay between the button click and the joke_show display, because we wait for the joke_gen to be generated and finished.
-// But we can also generate the joke_gen while the joke_show is displayed, and then update the joke_show to joke_gen when the joke_gen is finished. 
-// Then, when the button is clicked, we can immediately show the joke_show and start generating the joke_gen in the background.
-// This is implemented in version 2.
-// so the timeline is:
-// 1. button click, 2. show joke_show and start generate joke_gen in the background, 3. wait for joke_gen to finish, 4. update joke_show to joke_gen for next iteration
-
-// We DO NOT take the code from version 1, we write new functions, but we can of course reuse the general functions above.
-// we can use one function for the onload event when the webste first loads, and a separate function for the joke generation and display update.
-// So when the website is loaded, we can immediately show the joke_show and start generating the joke_gen in the background.
-// Then, when the button is clicked, we can immediately show the joke_show and start generating the joke_gen in the background.
-
-// for that to work, we need to get 2 jokes right at the beginning, so we can show the first joke immediately and start generating the second joke in the background.
-// we can then update the joke_show to the joke_gen when the joke_gen is finished.
-
-// --------------------------------------------------------------------------------------------
-// var joke_buffer = ""; // this is the joke that is stored in the background
-// var joke_show = ""; // this is the joke that is shown on the website
-// var running = false; // is the joke generation running?
-// var bg_buffer = ""; // this is the background that is stored in the background
-// var bg_show = ""; // this is the background that is shown on the website
-
-
+function isNaughty(str) {
+  var naughty = [
+      "vergewalt",
+    "schwul",
+    "lesbisch",
+    "fick",
+    "schlampe",
+    "nutte",
+    "wichser",
+    "hure",
+    "schwuchtel",
+    " homo",
+    "selbstmord",
+    "abtreib",
+    "neger",
+    "nigger",
+    "bimbo",
+    "behindert",
+    "weib ",
+    "bitch",
+    "fotze",
+    "muschi",
+    "hakenkreuz",
+    "vergasen",
+    "nazi",
+    "nationalsozialismus",
+    "konzentrationslager",
+    "jude",
+    "jüdin",
+    "jüdisch",
+    "hitler",  
+    " führer ",
+    "hautfarbe",
+    "schwarz",
+    "weiß",
+    "weiss",
+    "rassist",
+    "sexist",
+    " eichel ",
+    " sperma ",
+    " porn",
+    "anschlag",
+    "attentat",
+    "bombe",
+    "gestorben",
+    " tot",
+    " töten",
+    "tod",
+    "stirbt",
+    "getötet",
+    "ermordet",
+    "schlaganfall",
+    "massaker",       
+    "}"
+  ];
+  str = str.toLowerCase();
+  for (var i = 0; i < naughty.length; i++) {
+    if (str.includes(naughty[i])) return true;
+  }
+  return false;
+}
