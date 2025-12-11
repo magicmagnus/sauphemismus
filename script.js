@@ -50,31 +50,26 @@ var whatsapp_btn = `<svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px"
 //import fetch from "node-fetch";  
 
 async function query(data) {
-  const response = await fetch(
-    //"https://api-inference.huggingface.co/models/mistralai/Mistral-7B-v0.1",
-    //"https://api-inference.huggingface.co/models/EleutherAI/gpt-neo-1.3B",
-    //"https://api-inference.huggingface.co/models/openai-community/gpt2-xl",
-    //"https://api-inference.huggingface.co/models/bigscience/bloom",
+  try {
+    const response = await fetch('/.netlify/functions/huggingface', {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data),
+    });
 
-    //"https://api-inference.huggingface.co/models/HuggingFaceH4/zephyr-7b-beta",
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
     
-    //"https://api-inference.huggingface.co/models/google/gemma-7b",
-
-    //"https://api-inference.huggingface.co/models/benjamin/gpt2-wechsel-german",
-    //"https://api-inference.huggingface.co/models/dbmdz/german-gpt2",
-
-    "https://router.huggingface.co/featherless-ai/v1/completions",
-    {
-			headers: {
-				Authorization: `Bearer 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`,
-				"Content-Type": "application/json",
-			},
-			method: "POST",
-			body: JSON.stringify(data),
-		}
-	);
-	const result = await response.json();
-	return result;
+    const result = await response.json();
+    return result;
+  } catch (error) {
+    console.error('API call failed:', error);
+    // Fallback oder Error handling
+    throw error;
+  }
 }
 
 function generate() {

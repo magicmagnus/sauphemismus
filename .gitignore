@@ -1,1 +1,5 @@
 sprichworte_old/.vscode/settings.json
+
+# Local Netlify folder
+.netlify
+.env
